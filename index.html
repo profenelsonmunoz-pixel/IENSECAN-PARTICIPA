@@ -3,23 +3,441 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Guía Interactiva de Participación</title>
     <script src="https://cdn.tailwindcss.com"></script>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
-    "react": "https://aistudiocdn.com/react@^19.1.1",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.21.0"
-  }
-}
-</script>
-</head>
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.2.0",
+          "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+          "@google/genai": "https://aistudiocdn.com/@google/genai@^1.21.0"
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+    </style>
+  </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
+    <script type="module">
+      import React, { useState, useEffect } from 'react';
+      import ReactDOM from 'react-dom/client';
+      import { GoogleGenAI, Type } from "@google/genai";
+
+      // --- Constants ---
+      const LOGO_URL = 'https://iensecan.edu.co/wp-content/uploads/2024/08/ESCUDO-IENSECAN-2020-2.png';
+      const OCR_TEXT = `
+        NUESTRA SEÑORA DE LA CANDELAR
+        CANDELARIA-VALLE
+        Participa
+        ¿Cómo se puede participar?
+        La institución educativa Nuestra Señora de la Candelaria cuenta con los
+        siguientes mecanismos
+        Presencial
+        Dirección: Calle 10 No. 7-06 parque principal
+        Candelaria – Valle del Cauca
+        Colombia
+        Telefónico:
+        fijo: +(57) 6022600968
+        Celular: +(57) 3105472471
+        Lunes a viernes de 8:00 a.m. a 4:00 p.m.
+        Línea Anticorrupción: 01-800-0912667
+        Virtual:
+        Sitio Web: https://iensecan.edu.co/index.php/inicio/
+        Peticiones,quejas y reclamos: https://iensecan.edu.co/?page_id=24942
+        Redes sociales
+        https://www.facebook.com/IENSECAN/
+        https://x.com/i/flow/login?redirect_after_login=%2FIENSECAN
+        Cuentas para interactuar, recibir y responder peticiones, quejas, reclamos, denuncias y
+        sugerencias:
+        https://iensecan.edu.co/?page_id=24942
+        Correo Electrónico:
+        Correo Institucional: rectoria@iensecan.edu.co
+        Notificaciones judiciales: rectoria@iensecan.edu.co
+        Mecanismos de participación Ciudadana en MinTIC
+        • Audiencias públicas: foros abiertos realizados de cara a la ciudadanía, en los
+        que se informa y se responden preguntas sobre el funcionamiento de la entidad.
+        • Audiencia pública de rendición de cuentas: espacios para la rendición de
+        cuentas, de encuentro y reflexión final sobre los resultados de la gestión de un
+        periodo.
+        • Rendición de cuentas: deber que tienen las autoridades de la administración
+        pública de responder públicamente, ante las exigencias que haga la ciudadanía,
+        por el manejo de los recursos, las decisiones y la gestión realizada en el ejercicio
+        del poder que les ha sido delegado.
+        • Veeduría ciudadana: mecanismo democrático de representación que le permite
+        a los ciudadanos o a las diferentes organizaciones comunitarias, ejercer
+        vigilancia sobre la gestión pública.
+        • Acción de cumplimiento: mecanismo de protección de derechos; esta acción
+        protege el principio de legalidad y eficacia del ordenamiento jurídico.
+        • Acción de tutela: mecanismo mediante el cual toda persona puede reclamar
+        ante los jueces la protección inmediata de sus derechos constitucionales
+        fundamentales, cuando estos resultan vulnerados o amenazados por la acción o
+        la omisión de cualquier autoridad pública o de los particulares en los casos
+        establecidos en la ley.
+        • Consultas: petición que se presenta a las autoridades para manifestar su parecer
+        sobre materias relacionadas con sus atribuciones y competencias. El plazo
+        máximo para responderlas es de 30 días.
+        • Denuncia: documento en que se da noticia a la autoridad competente de la
+        comisión de un delito o de una falta.
+        • Petición o derechos de petición: derecho que tiene toda persona para solicitar o
+        reclamar ante las autoridades competentes por razones de interés general o
+        interés particular para elevar solicitudes respetuosas de información y/o consulta
+        y para obtener pronta resolución de las mismas.
+        • Queja: cualquier expresión verbal, escrita o en medio digital de insatisfacción
+        con la conducta o la acción de los servidores públicos o de los particulares que
+        llevan a cabo una función estatal y que requiere una respuesta. (Las quejas deben
+        ser resueltas, atendidas o contestadas dentro de los quince (15) días siguientes a
+        la fecha de su presentación).
+        • Reclamo: cualquier expresión verbal, escrita o en medio digital, de
+        insatisfacción referida a la prestación de un servicio o la deficiente atención de
+        una autoridad pública, es decir, es una declaración formal por el incumplimiento
+        de un derecho que ha sido perjudicado o amenazado, ocasionado por la
+        deficiente prestación o suspensión injustificada del servicio. (Los reclamos
+        deben ser resueltos, atendidos o contestados dentro de los quince (15) días
+        siguientes a la fecha de su presentación).
+        • Sugerencia: cualquier expresión verbal, escrita o en medio digital de
+        recomendación entregada por el ciudadano, que tiene por objeto mejorar los
+        servicios que presta el Ministerio para racionalizar el empleo de los recursos o
+        hacer más participativa la gestión pública. (En un término de diez (10) días se
+        informará sobre la viabilidad de su aplicación).
+        • Trámite: conjunto o serie de pasos o acciones reguladas por el Estado, que
+        deben efectuar los usuarios para adquirir un derecho o cumplir con una
+        obligación prevista o autorizada por la ley.
+      `;
+
+      // --- Gemini Service ---
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+      async function getStructuredContent() {
+        const prompt = `
+          Analiza el siguiente texto extraído de una guía de participación de una institución educativa y estructúralo en un formato JSON limpio y bien organizado. 
+          El JSON debe contener:
+          1. Un título principal ("mainTitle").
+          2. Un párrafo de introducción ("introduction").
+          3. Una lista de métodos de contacto ("contactMethods"), donde cada método tiene un tipo (type), un título (title), y una lista de detalles (details). Cada detalle debe tener una etiqueta (label), un valor (value), y un booleano opcional (isLink) si el valor es una URL. Para el método de contacto 'Presencial', utiliza el título 'Sede Administrativa' y asegúrate de que incluya tres detalles separados:
+             a. La dirección física, extraída del texto, con la etiqueta 'Dirección'.
+             b. El horario de atención, extraído del texto, con la etiqueta 'Horario de Atención'.
+             c. Un enlace al mapa con la etiqueta 'Ubicación en Mapa', usando el valor "https://maps.app.goo.gl/6rb3h5KhJ6LW2dzm7", y asegúrate de que este detalle se marque como un enlace (isLink: true).
+          4. Un título para la sección de mecanismos ("mechanismsTitle").
+          5. Una lista de mecanismos de participación ciudadana ("mechanisms"), donde cada uno tiene un título (title) y una descripción detallada (description).
+
+          Asegúrate de que los enlaces y correos electrónicos sean valores correctos y que el contenido sea preciso según el texto proporcionado.
+
+          Texto para analizar:
+          ---
+          ${OCR_TEXT}
+          ---
+        `;
+
+        const responseSchema = {
+          type: Type.OBJECT,
+          properties: {
+            mainTitle: { type: Type.STRING, description: "El título principal de la página." },
+            introduction: { type: Type.STRING, description: "Un breve párrafo introductorio." },
+            contactMethods: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  type: { type: Type.STRING, description: "El tipo de contacto, ej: 'Presencial'." },
+                  title: { type: Type.STRING, description: "El título del método de contacto." },
+                  details: {
+                    type: Type.ARRAY,
+                    items: {
+                      type: Type.OBJECT,
+                      properties: {
+                        label: { type: Type.STRING, description: "Etiqueta para el detalle de contacto." },
+                        value: { type: Type.STRING, description: "Valor del detalle de contacto." },
+                        isLink: { type: Type.BOOLEAN, description: "Indica si el valor es un enlace URL." },
+                        isMap: { type: Type.BOOLEAN, description: "Indica si el valor es una dirección para mostrar en un mapa." }
+                      },
+                      required: ["label", "value"]
+                    }
+                  }
+                },
+                required: ["type", "title", "details"]
+              }
+            },
+            mechanismsTitle: { type: Type.STRING, description: "Título para la sección de mecanismos de participación." },
+            mechanisms: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  title: { type: Type.STRING, description: "El nombre del mecanismo." },
+                  description: { type: Type.STRING, description: "La explicación del mecanismo." }
+                },
+                required: ["title", "description"]
+              }
+            }
+          },
+          required: ["mainTitle", "introduction", "contactMethods", "mechanismsTitle", "mechanisms"]
+        };
+
+        try {
+          const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: responseSchema,
+            },
+          });
+
+          const jsonText = response.text.trim();
+          return JSON.parse(jsonText);
+          
+        } catch (error) {
+          console.error("Error calling Gemini API:", error);
+          throw new Error("Failed to fetch and structure content from Gemini API.");
+        }
+      }
+
+      // --- Icons ---
+      const GlobeAltIcon = (props) => (
+        React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props },
+          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-1.605.42-3.113 1.157-4.418" })
+        )
+      );
+
+      const PhoneIcon = (props) => (
+        React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props },
+          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" })
+        )
+      );
+
+      const EnvelopeIcon = (props) => (
+        React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props },
+          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M21.75 6.75v10.5a2.25 2.25 0 01-2.25-2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" })
+        )
+      );
+
+      const BuildingOfficeIcon = (props) => (
+          React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props },
+              React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h6M9 11.25h6m-6 4.5h6M6.75 21v-2.25a2.25 2.25 0 012.25-2.25h6a2.25 2.25 0 012.25 2.25V21" })
+          )
+      );
+
+      const UserGroupIcon = (props) => (
+        React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props },
+          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m-7.5-2.962c.513-.463 1.12-.826 1.757-1.139m-4.5 4.342c.636 1.026 1.487 1.867 2.446 2.542m-2.446-2.542a3 3 0 00-4.085-2.234c.2.59.38 1.205.485 1.84M18 18.72a9.123 9.123 0 01-7.5 0m7.5 0a9.043 9.043 0 01-4.125-.873M10.5 2.25c4.142 0 7.5 3.358 7.5 7.5s-3.358 7.5-7.5 7.5-7.5-3.358-7.5-7.5 3.358-7.5 7.5-7.5zm-7.5 7.5h15" })
+        )
+      );
+
+      const ChevronDownIcon = (props) => (
+          React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props },
+              React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M19.5 8.25l-7.5 7.5-7.5-7.5" })
+          )
+      );
+
+      const QuestionMarkCircleIcon = (props) => (
+        React.createElement('svg', { xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", ...props },
+          React.createElement('path', { strokeLinecap: "round", strokeLinejoin: "round", d: "M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" })
+        )
+      );
+
+      // --- Components ---
+      const Loader = () => {
+        return (
+          React.createElement('div', { className: "flex flex-col items-center justify-center py-12" },
+            React.createElement('div', { className: "animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600" }),
+            React.createElement('p', { className: "mt-4 text-lg font-semibold text-gray-700" }, "Cargando contenido...")
+          )
+        );
+      };
+
+      const ContactCard = ({ title, details, icon }) => {
+        const mapUrl = (query) => 
+          `https://www.google.com/maps/embed/v1/place?key=${process.env.API_KEY}&q=${encodeURIComponent(query)}`;
+
+        return (
+          React.createElement('div', { className: "bg-white rounded-2xl shadow-lg p-6 flex flex-col h-full transform hover:-translate-y-2 transition-transform duration-300" },
+            React.createElement('div', { className: "flex items-center mb-4" },
+              React.createElement('div', { className: "bg-blue-600 p-3 rounded-full mr-4" }, icon),
+              React.createElement('h3', { className: "text-xl font-bold text-gray-900" }, title)
+            ),
+            React.createElement('div', { className: "flex-grow space-y-3 text-gray-700" },
+              details.map((detail, index) => (
+                React.createElement('div', { key: index, className: "flex flex-col" },
+                  React.createElement('span', { className: "font-semibold text-sm text-gray-500" }, `${detail.label}:`),
+                  detail.isMap ? (
+                    React.createElement('div', { className: "mt-1 aspect-w-16 aspect-h-9" },
+                      React.createElement('iframe', {
+                        src: mapUrl(detail.value),
+                        className: "w-full h-48 rounded-lg border-0",
+                        allowFullScreen: false,
+                        loading: "lazy",
+                        referrerPolicy: "no-referrer-when-downgrade",
+                        title: `Mapa de ubicación para ${detail.label}`
+                      })
+                    )
+                  ) : detail.isLink ? (
+                    React.createElement('a', { 
+                      href: detail.value, 
+                      target: "_blank", 
+                      rel: "noopener noreferrer", 
+                      className: "text-blue-600 hover:text-blue-800 hover:underline break-words"
+                    }, detail.value.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0] + '...')
+                  ) : (
+                     React.createElement('span', { className: "break-words" }, detail.value)
+                  )
+                )
+              ))
+            )
+          )
+        );
+      };
+
+      const MechanismCard = ({ title, description, isOpen, onToggle }) => {
+        return (
+          React.createElement('div', { className: "border border-gray-200 rounded-lg overflow-hidden" },
+            React.createElement('button', {
+              onClick: onToggle,
+              className: "w-full flex justify-between items-center p-4 text-left bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            },
+              React.createElement('h4', { className: "text-lg font-semibold text-gray-800" }, title),
+              React.createElement(ChevronDownIcon, { 
+                className: `h-6 w-6 text-gray-500 transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}` 
+              })
+            ),
+            React.createElement('div', { 
+              className: `transition-all duration-500 ease-in-out ${isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`
+            },
+              React.createElement('div', { className: "p-4 bg-white text-gray-600 border-t border-gray-200" },
+                React.createElement('p', null, description)
+              )
+            )
+          )
+        );
+      };
+
+      // --- App Component ---
+      const App = () => {
+        const [content, setContent] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [error, setError] = useState(null);
+        const [activeMechanism, setActiveMechanism] = useState(null);
+
+        useEffect(() => {
+          const fetchContent = async () => {
+            try {
+              setLoading(true);
+              const structuredContent = await getStructuredContent();
+              setContent(structuredContent);
+              setError(null);
+            } catch (err) {
+              console.error("Error fetching content:", err);
+              setError("No se pudo cargar el contenido. Por favor, intente de nuevo más tarde.");
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          fetchContent();
+        }, []);
+        
+        const getIconForMethod = (type) => {
+          switch (type) {
+            case 'Presencial':
+              return React.createElement(BuildingOfficeIcon, { className: "h-8 w-8 text-white" });
+            case 'Telefónico':
+              return React.createElement(PhoneIcon, { className: "h-8 w-8 text-white" });
+            case 'Virtual':
+              return React.createElement(GlobeAltIcon, { className: "h-8 w-8 text-white" });
+            case 'Correo Electrónico':
+              return React.createElement(EnvelopeIcon, { className: "h-8 w-8 text-white" });
+            default:
+              return React.createElement(QuestionMarkCircleIcon, { className: "h-8 w-8 text-white" });
+          }
+        };
+
+        const toggleMechanism = (title) => {
+          setActiveMechanism(activeMechanism === title ? null : title);
+        };
+
+        return (
+          React.createElement('div', { className: "bg-gray-100 min-h-screen font-sans text-gray-800" },
+            React.createElement('header', { className: "bg-white shadow-md p-4 sticky top-0 z-10" },
+              React.createElement('div', { className: "container mx-auto flex items-center justify-center sm:justify-start space-x-4" },
+                React.createElement('img', { src: LOGO_URL, alt: "Logo de la Institución", className: "h-16 w-16 object-contain" }),
+                React.createElement('h1', { className: "text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 hidden sm:block" },
+                  "I.E. Nuestra Señora de la Candelaria"
+                )
+              )
+            ),
+            React.createElement('main', { className: "container mx-auto p-4 md:p-8" },
+              loading ? (
+                React.createElement(Loader, null)
+              ) : error ? (
+                React.createElement('div', { className: "text-center text-red-500 bg-red-100 p-4 rounded-lg" },
+                  React.createElement('p', { className: "font-bold" }, "Error"),
+                  React.createElement('p', null, error)
+                )
+              ) : content ? (
+                React.createElement(React.Fragment, null,
+                  React.createElement('section', { className: "text-center mb-12" },
+                    React.createElement('h2', { className: "text-4xl font-extrabold text-gray-900 mb-2" }, content.mainTitle),
+                    React.createElement('p', { className: "text-lg text-gray-600 max-w-3xl mx-auto" }, content.introduction)
+                  ),
+                  React.createElement('section', { className: "mb-12" },
+                    React.createElement('div', { className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8" },
+                      content.contactMethods.map((method) => (
+                        React.createElement(ContactCard, { 
+                          key: method.type, 
+                          type: method.type,
+                          title: method.title,
+                          details: method.details,
+                          icon: getIconForMethod(method.type)
+                        })
+                      ))
+                    )
+                  ),
+                  React.createElement('section', null,
+                    React.createElement('div', { className: "bg-white p-6 sm:p-8 rounded-2xl shadow-lg" },
+                      React.createElement('div', { className: "flex items-center space-x-4 mb-6" },
+                          React.createElement('div', { className: "bg-blue-600 p-3 rounded-full" },
+                              React.createElement(UserGroupIcon, { className: "h-8 w-8 text-white" })
+                          ),
+                          React.createElement('h3', { className: "text-3xl font-bold text-gray-900" }, content.mechanismsTitle)
+                      ),
+                      React.createElement('div', { className: "space-y-4" },
+                        content.mechanisms.map((mechanism) => (
+                          React.createElement(MechanismCard, { 
+                            key: mechanism.title,
+                            title: mechanism.title,
+                            description: mechanism.description,
+                            isOpen: activeMechanism === mechanism.title,
+                            onToggle: () => toggleMechanism(mechanism.title)
+                          })
+                        ))
+                      )
+                    )
+                  )
+                )
+              ) : null
+            ),
+            React.createElement('footer', { className: "text-center p-4 mt-8 text-gray-500 text-sm" },
+              React.createElement('p', null, "Desarrollado con IA para una mejor experiencia de usuario.")
+            )
+          )
+        );
+      };
+
+      // --- Mount Application ---
+      const rootElement = document.getElementById('root');
+      if (!rootElement) {
+        throw new Error("Could not find root element to mount to");
+      }
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(
+        React.createElement(React.StrictMode, null, 
+          React.createElement(App, null)
+        )
+      );
+    </script>
   </body>
 </html>
